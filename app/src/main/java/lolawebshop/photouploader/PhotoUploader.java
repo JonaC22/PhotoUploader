@@ -15,33 +15,65 @@ import android.widget.ImageView;
 import android.widget.Toast;
 import com.cloudinary.Cloudinary;
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
+import java.sql.Connection;
+//import java.sql.Statement;
 
 public class PhotoUploader extends Activity {
 
     private static int RESULT_LOAD_IMAGE = 1;
 
     Cloudinary cloudinary;
+    Connection c;
+   // Statement query = null;
 
-    private void initCloudinary(){
-        String apiURL = null;
+    private static Connection getConnection(String databaseURL) throws URISyntaxException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        URI dbUri = new URI(databaseURL);
+        String username = dbUri.getUserInfo().split(":")[0];
+        String password = dbUri.getUserInfo().split(":")[1];
+        String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() +
+                dbUri.getPath() + "?user="+ username +"&password=" +
+                password + "&ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory";
+
+        Class.forName("org.postgresql.Driver");
+        return DriverManager.getConnection(dbUrl);
+    }
+
+    private void initConnections(){
+        String cloudinaryURL = null;
+        String postgresqlURL = null;
 
         try {
             Bundle bundle = getPackageManager()
                     .getApplicationInfo( getPackageName(), PackageManager.GET_META_DATA)
                     .metaData;
-            apiURL = bundle.getString("CLOUDINARY_URL");
+            cloudinaryURL = bundle.getString("CLOUDINARY_URL");
+            postgresqlURL = bundle.getString("POSTGRESQL_URL");
+
         } catch (PackageManager.NameNotFoundException e) {
             // fall-thru
         } catch (NullPointerException e) {
             // fall-thru
         }
-        if (apiURL == null) {
-            throw new RuntimeException("Couldn't load cloudinary meta-data from manifest");
+        if (cloudinaryURL == null || postgresqlURL == null) {
+            throw new RuntimeException("Couldn't load meta-data from manifest");
         }
 
-        cloudinary = new Cloudinary(apiURL);
+        cloudinary = new Cloudinary(cloudinaryURL);
+
+        Log.i("CLOUDINARY", "Conectado");
+
+        try {
+            c = getConnection(postgresqlURL);
+            Log.i("POSTGRESQL", "Conectado");
+        } catch (Exception e) {
+            Log.e("POSTGRESQL", "ERROR! " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -50,7 +82,7 @@ public class PhotoUploader extends Activity {
         setContentView(R.layout.main);
 
         Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
-        initCloudinary();
+        initConnections();
         buttonLoadImage.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -87,9 +119,11 @@ public class PhotoUploader extends Activity {
             try {
                 File foto = new File(picturePath);
                 Map upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
+                Log.i("UPLOAD", "La imagen se subió correctamente " + upload.toString());
                 Toast.makeText(getApplicationContext(), "OK, imagen subida", Toast.LENGTH_LONG).show();
+
             } catch (Exception e) {
-                Log.e("Cloudinary Upload","La aplicacion respondio de una forma inesperada",e);
+                Log.e("UPLOAD","La aplicacion respondio de una forma inesperada",e);
                 Toast.makeText(getApplicationContext(),"ERROR. See logcat", Toast.LENGTH_LONG).show();
             }
         }

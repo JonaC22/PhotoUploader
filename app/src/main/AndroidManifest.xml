@@ -17,6 +17,7 @@
             </intent-filter>
         </activity>
         <meta-data android:name="CLOUDINARY_URL" android:value="@string/cloudinary_url"/>
+        <meta-data android:name="POSTGRESQL_URL" android:value="@string/postgresql_url"/>
     </application>
 
 </manifest>
