@@ -4,8 +4,16 @@
     <string name="app_name">PhotoUploader</string>
     <string name="action_settings">Settings</string>
     <string name="feedbacktype">Categoria</string>
-    <string name="feedbacktype1">Aros</string>
-    <string name="feedbacktype2">Anillos</string>
-    <string name="feedbacktype3">Collares</string>
-    <string name="feedbacktype4">Relojes</string>
+    <string name="feedbacktype1">aros</string>
+    <string name="feedbacktype2">billeteras</string>
+    <string name="feedbacktype3">cintos</string>
+    <string name="feedbacktype4">chalinas</string>
+    <string name="feedbacktype5">clutchs</string>
+    <string name="feedbacktype6">collares</string>
+    <string name="feedbacktype7">monederos</string>
+    <string name="feedbacktype8">portacelulares</string>
+    <string name="feedbacktype9">pulseras</string>
+    <string name="feedbacktype10">relojes</string>
+    <string name="feedbacktype11">sombreros</string>
+    <string name="feedbacktype12">anillo</string>
 </resources>

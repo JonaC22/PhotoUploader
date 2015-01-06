@@ -11,7 +11,9 @@ import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.Toast;
 import com.cloudinary.Cloudinary;
 import java.io.File;
@@ -21,6 +23,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.sql.Connection;
 
@@ -31,6 +34,8 @@ public class PhotoUploader extends ActionBarActivity {
     Cloudinary cloudinary;
     Connection c;
     PreparedStatement query = null;
+    String picturePath = null;
+    Map<String,Integer> categorias = new HashMap<String,Integer>();
 
     private static Connection getConnection(String databaseURL) throws URISyntaxException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         URI dbUri = new URI(databaseURL);
@@ -82,6 +87,7 @@ public class PhotoUploader extends ActionBarActivity {
         setContentView(R.layout.main);
 
         initConnections();
+        initCategorias();
         
         //Boton seleccion de imagen 
         Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
@@ -103,12 +109,82 @@ public class PhotoUploader extends ActionBarActivity {
 
         Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
         buttonUpload.setEnabled(false);
-
+        
         buttonUpload.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Toast.makeText(getApplicationContext(), "La foto se subio correctamente", Toast.LENGTH_SHORT).show();
+                Map upload = null;
+                try {
+                    File foto = new File(picturePath);
+                    upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
+                    Log.i("CLOUDINARY", "La imagen se subió correctamente " + upload.toString());
+                } catch (Exception e) {
+                    Log.e("CLOUDINARY","La aplicacion respondio de una forma inesperada",e);
+                    Toast.makeText(getApplicationContext(),"ERROR. See logcat", Toast.LENGTH_LONG).show();
+                }
+                
+                EditText tituloEditText = (EditText) findViewById(R.id.tituloEditText);
+                EditText provEditText = (EditText) findViewById(R.id.provEditText);
+                Spinner spinnerCategoria = (Spinner) findViewById(R.id.spinnerCategoria);
+
+                String titulo = tituloEditText.getText().toString();
+                String proveedor = provEditText.getText().toString();
+                int categoria = categorias.get(spinnerCategoria.getSelectedItem().toString());
+
+                insertarPostgreSQL(titulo, proveedor, categoria, upload);
             }
         });
+    }
+
+    private void insertarPostgreSQL(String titulo, String proveedor, int categoria, Map upload) {
+        if (titulo != null && proveedor != null && upload != null) {
+
+            try {
+                String imagen = upload.get("public_id").toString();
+                query = c.prepareStatement("INSERT INTO lola.productos (titulo, proveedor, categoria, imagen) VALUES (?,?,?,?)");
+                query.setString(1, titulo);
+                query.setString(2, proveedor);
+                query.setInt(3, categoria);
+                query.setString(4, imagen);
+
+                int retorno = query.executeUpdate();
+                if (retorno > 0)
+                    Log.i("POSTGRESQL", "Insertado correctamente");
+
+            }catch(SQLException sqle){
+                Log.e("POSTGRESQL", "SQLState: "
+                        + sqle.getSQLState() + " SQLErrorCode: "
+                        + sqle.getErrorCode(), sqle);
+            }catch(Exception e){
+                Log.e("POSTGRESQL", "ERROR ", e);
+            }finally{
+                if (c != null) {
+                    try {
+                        query.close();
+                        Toast.makeText(getApplicationContext(), "La foto se subio correctamente", Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Log.e("POSTGRESQL", "ERROR: Closing query ", e);
+                    }
+                }
+            }
+        }
+        else {
+            Log.e("FORM", "ERROR: Algun atributo es nulo");
+        }
+    }
+
+    private void initCategorias() {
+        categorias.put("aros", 1);
+        categorias.put("billeteras", 2);
+        categorias.put("cintos", 3);
+        categorias.put("chalinas", 4);
+        categorias.put("clutchs", 5);
+        categorias.put("collares", 6);
+        categorias.put("monederos", 7);
+        categorias.put("portacelulares", 8);
+        categorias.put("pulseras", 9);
+        categorias.put("relojes", 10);
+        categorias.put("sombreros", 11);
+        categorias.put("anillos", 12);
     }
 
 
@@ -117,8 +193,6 @@ public class PhotoUploader extends ActionBarActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
-
-            Map upload = null;
             Uri selectedImage = data.getData();
             String[] filePathColumn = { MediaStore.Images.Media.DATA };
 
@@ -127,56 +201,12 @@ public class PhotoUploader extends ActionBarActivity {
             cursor.moveToFirst();
 
             int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-            String picturePath = cursor.getString(columnIndex);
+            picturePath = cursor.getString(columnIndex);
             cursor.close();
             ImageView imageView = (ImageView) findViewById(R.id.imgView);
             imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
             Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
-            buttonUpload.setEnabled(true);
-/*
-            try {
-                File foto = new File(picturePath);
-                upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
-                Log.i("CLOUDINARY", "La imagen se subió correctamente " + upload.toString());
-                Toast.makeText(getApplicationContext(), "OK, imagen subida", Toast.LENGTH_LONG).show();
-
-            } catch (Exception e) {
-                Log.e("CLOUDINARY","La aplicacion respondio de una forma inesperada",e);
-                Toast.makeText(getApplicationContext(),"ERROR. See logcat", Toast.LENGTH_LONG).show();
-            }
-
-            try{
-                String titulo= "ejemploTitulo";
-                String proveedor = "ejemploProveedor";
-                int categoria = 1;
-                assert upload != null;
-                String imagen = upload.get("public_id").toString();
-
-                query = c.prepareStatement("INSERT INTO lola.productos (titulo, proveedor, categoria, imagen) VALUES (?,?,?,?)");
-                query.setString(1,titulo);
-                query.setString(2, proveedor);
-                query.setInt(3, categoria);
-                query.setString(4, imagen);
-
-                int retorno = query.executeUpdate();
-                if (retorno>0)
-                    Log.i("POSTGRESQL","Insertado correctamente");
-
-            } catch (SQLException sqle){
-                Log.e("POSTGRESQL", "SQLState: "
-                        + sqle.getSQLState() + " SQLErrorCode: "
-                        + sqle.getErrorCode(), sqle);
-            } catch (Exception e){
-                Log.e("POSTGRESQL", "ERROR ", e);
-            } finally {
-                if (c != null) {
-                    try{
-                        query.close();
-                    } catch(Exception e){
-                        Log.e("POSTGRESQL", "ERROR: Closing query ", e);
-                    }
-                }
-            } */
+            buttonUpload.setEnabled(true); 
         }
     }
 }
