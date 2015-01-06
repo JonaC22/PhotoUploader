@@ -3,5 +3,9 @@
 
     <string name="app_name">PhotoUploader</string>
     <string name="action_settings">Settings</string>
-
+    <string name="feedbacktype">Categoria</string>
+    <string name="feedbacktype1">Aros</string>
+    <string name="feedbacktype2">Anillos</string>
+    <string name="feedbacktype3">Collares</string>
+    <string name="feedbacktype4">Relojes</string>
 </resources>

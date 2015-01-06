@@ -4,5 +4,34 @@
     android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent"
     tools:context=".PhotoUploader">
     <ImageView android:id="@+id/imgView" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1"></ImageView>
-    <Button android:id="@+id/buttonLoadPicture" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="0" android:text="Load Picture" android:layout_gravity="center"></Button>
+
+    <Button android:id="@+id/buttonLoadPicture" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="0" android:text="Elegir foto"
+        android:layout_gravity="center_horizontal"></Button>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:id="@+id/tituloEditText"
+        android:hint="Titulo" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:id="@+id/provEditText"
+        android:hint="Proveedor" />
+
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:id="@+id/spinner"
+        android:prompt="@string/feedbacktype"
+        android:spinnerMode="dialog"
+        android:entries="@array/feedbacktypelist"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Subir foto"
+        android:id="@+id/buttonUpload"
+        android:layout_gravity="center_horizontal" />
 </LinearLayout>

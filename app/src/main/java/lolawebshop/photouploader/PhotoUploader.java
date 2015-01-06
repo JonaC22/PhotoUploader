@@ -1,6 +1,5 @@
 package lolawebshop.photouploader;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -8,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.sql.Connection;
 
-public class PhotoUploader extends Activity {
+public class PhotoUploader extends ActionBarActivity {
 
     private static int RESULT_LOAD_IMAGE = 1;
 
@@ -81,8 +81,11 @@ public class PhotoUploader extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
-        Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
         initConnections();
+        
+        //Boton seleccion de imagen 
+        Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
+        
         buttonLoadImage.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -93,6 +96,17 @@ public class PhotoUploader extends Activity {
                         MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
                 startActivityForResult(i, RESULT_LOAD_IMAGE);
+            }
+        });
+        
+        //Boton subir imagen
+
+        Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
+        buttonUpload.setEnabled(false);
+
+        buttonUpload.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(), "La foto se subio correctamente", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -117,6 +131,9 @@ public class PhotoUploader extends Activity {
             cursor.close();
             ImageView imageView = (ImageView) findViewById(R.id.imgView);
             imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
+            Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
+            buttonUpload.setEnabled(true);
+/*
             try {
                 File foto = new File(picturePath);
                 upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
@@ -132,6 +149,7 @@ public class PhotoUploader extends Activity {
                 String titulo= "ejemploTitulo";
                 String proveedor = "ejemploProveedor";
                 int categoria = 1;
+                assert upload != null;
                 String imagen = upload.get("public_id").toString();
 
                 query = c.prepareStatement("INSERT INTO lola.productos (titulo, proveedor, categoria, imagen) VALUES (?,?,?,?)");
@@ -158,7 +176,7 @@ public class PhotoUploader extends Activity {
                         Log.e("POSTGRESQL", "ERROR: Closing query ", e);
                     }
                 }
-            }
+            } */
         }
     }
 }
