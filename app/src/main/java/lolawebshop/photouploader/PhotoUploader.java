@@ -18,11 +18,11 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
 import java.sql.Connection;
-//import java.sql.Statement;
 
 public class PhotoUploader extends Activity {
 
@@ -30,7 +30,7 @@ public class PhotoUploader extends Activity {
 
     Cloudinary cloudinary;
     Connection c;
-   // Statement query = null;
+    PreparedStatement query = null;
 
     private static Connection getConnection(String databaseURL) throws URISyntaxException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         URI dbUri = new URI(databaseURL);
@@ -104,6 +104,7 @@ public class PhotoUploader extends Activity {
 
         if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
 
+            Map upload = null;
             Uri selectedImage = data.getData();
             String[] filePathColumn = { MediaStore.Images.Media.DATA };
 
@@ -118,13 +119,45 @@ public class PhotoUploader extends Activity {
             imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
             try {
                 File foto = new File(picturePath);
-                Map upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
-                Log.i("UPLOAD", "La imagen se subió correctamente " + upload.toString());
+                upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
+                Log.i("CLOUDINARY", "La imagen se subió correctamente " + upload.toString());
                 Toast.makeText(getApplicationContext(), "OK, imagen subida", Toast.LENGTH_LONG).show();
 
             } catch (Exception e) {
-                Log.e("UPLOAD","La aplicacion respondio de una forma inesperada",e);
+                Log.e("CLOUDINARY","La aplicacion respondio de una forma inesperada",e);
                 Toast.makeText(getApplicationContext(),"ERROR. See logcat", Toast.LENGTH_LONG).show();
+            }
+
+            try{
+                String titulo= "ejemploTitulo";
+                String proveedor = "ejemploProveedor";
+                int categoria = 1;
+                String imagen = upload.get("public_id").toString();
+
+                query = c.prepareStatement("INSERT INTO lola.productos (titulo, proveedor, categoria, imagen) VALUES (?,?,?,?)");
+                query.setString(1,titulo);
+                query.setString(2, proveedor);
+                query.setInt(3, categoria);
+                query.setString(4, imagen);
+
+                int retorno = query.executeUpdate();
+                if (retorno>0)
+                    Log.i("POSTGRESQL","Insertado correctamente");
+
+            } catch (SQLException sqle){
+                Log.e("POSTGRESQL", "SQLState: "
+                        + sqle.getSQLState() + " SQLErrorCode: "
+                        + sqle.getErrorCode(), sqle);
+            } catch (Exception e){
+                Log.e("POSTGRESQL", "ERROR ", e);
+            } finally {
+                if (c != null) {
+                    try{
+                        query.close();
+                    } catch(Exception e){
+                        Log.e("POSTGRESQL", "ERROR: Closing query ", e);
+                    }
+                }
             }
         }
     }
