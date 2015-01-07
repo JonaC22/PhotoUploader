@@ -11,6 +11,7 @@ TODO
     * ~~Alta~~
     * Baja
     * Modificacion
+  * Transformación de fotos anchas a formato estandar vertical
 * Requerimientos no funcionales
   * ActionBar para las funcionalidades
 * ~~Agregar elementos de vista para completar datos~~
