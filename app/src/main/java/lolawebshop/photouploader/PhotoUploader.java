@@ -17,42 +17,33 @@ import android.widget.Spinner;
 import android.widget.Toast;
 import com.cloudinary.Cloudinary;
 import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.sql.Connection;
 
 public class PhotoUploader extends ActionBarActivity {
 
     private static int RESULT_LOAD_IMAGE = 1;
     private boolean SECURE_UPLOAD = true;
     Cloudinary cloudinary;
-    Connection c;
-    PreparedStatement query = null;
     String picturePath = null;
-    Map<String,Integer> categorias = new HashMap<String,Integer>();
-
-    private static Connection getConnection(String databaseURL) throws URISyntaxException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-        URI dbUri = new URI(databaseURL);
-        String username = dbUri.getUserInfo().split(":")[0];
-        String password = dbUri.getUserInfo().split(":")[1];
-        String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() +
-                dbUri.getPath() + "?user="+ username +"&password=" +
-                password + "&ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory";
-
-        Class.forName("org.postgresql.Driver");
-        return DriverManager.getConnection(dbUrl);
-    }
+    Map<String,Integer> categorias = null;
+    String cloudinaryURL = null;
+    String postgresqlURL = null;
 
     private void initConnections(){
-        String cloudinaryURL = null;
-        String postgresqlURL = null;
 
+        getConnectionStrings();
+        
+        cloudinary = new Cloudinary(cloudinaryURL);
+
+        Log.i("CLOUDINARY", "Conectado");
+
+        DBManager.makeConnection(postgresqlURL);
+
+        Log.i("POSTGRESQL", "Conectado");
+    }
+    
+    private void getConnectionStrings(){
         try {
             Bundle bundle = getPackageManager()
                     .getApplicationInfo( getPackageName(), PackageManager.GET_META_DATA)
@@ -60,24 +51,12 @@ public class PhotoUploader extends ActionBarActivity {
             cloudinaryURL = bundle.getString("CLOUDINARY_URL");
             postgresqlURL = bundle.getString("POSTGRESQL_URL");
 
-        } catch (PackageManager.NameNotFoundException e) {
-            // fall-thru
-        } catch (NullPointerException e) {
-            // fall-thru
+        } catch (Exception e) {
+            Log.e("PackageManager", "ERROR! " + e.getMessage(), e);
         }
+        
         if (cloudinaryURL == null || postgresqlURL == null) {
             throw new RuntimeException("Couldn't load meta-data from manifest");
-        }
-
-        cloudinary = new Cloudinary(cloudinaryURL);
-
-        Log.i("CLOUDINARY", "Conectado");
-
-        try {
-            c = getConnection(postgresqlURL);
-            Log.i("POSTGRESQL", "Conectado");
-        } catch (Exception e) {
-            Log.e("POSTGRESQL", "ERROR! " + e.getMessage(), e);
         }
     }
 
@@ -87,7 +66,7 @@ public class PhotoUploader extends ActionBarActivity {
         setContentView(R.layout.main);
 
         initConnections();
-        initCategorias();
+        categorias = DBManager.getCategorias();
         
         //Boton seleccion de imagen 
         Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
@@ -137,66 +116,12 @@ public class PhotoUploader extends ActionBarActivity {
                     String proveedor = provEditText.getText().toString();
                     int categoria = categorias.get(spinnerCategoria.getSelectedItem().toString());
 
-                    insertarPostgreSQL(titulo, proveedor, categoria, upload);
+                    DBManager.insertarPostgreSQL(titulo, proveedor, categoria, upload);
                     Toast.makeText(getApplicationContext(), "La foto se subio correctamente", Toast.LENGTH_SHORT).show();
                 }
             }
         });
     }
-
-    private void insertarPostgreSQL(String titulo, String proveedor, int categoria, Map upload) {
-        if (titulo != null && proveedor != null && upload != null) {
-
-            try {
-                //TODO sacar el SQL plano y encapsularlo en un objeto o usar ORM
-                String imagen = upload.get("public_id").toString();
-                query = c.prepareStatement("INSERT INTO lola.productos (titulo, proveedor, categoria, imagen) VALUES (?,?,?,?)");
-                query.setString(1, titulo);
-                query.setString(2, proveedor);
-                query.setInt(3, categoria);
-                query.setString(4, imagen);
-
-                int retorno = query.executeUpdate();
-                if (retorno > 0)
-                    Log.i("POSTGRESQL", "Insertado correctamente");
-
-            }catch(SQLException sqle){
-                Log.e("POSTGRESQL", "SQLState: "
-                        + sqle.getSQLState() + " SQLErrorCode: "
-                        + sqle.getErrorCode(), sqle);
-            }catch(Exception e){
-                Log.e("POSTGRESQL", "ERROR ", e);
-            }finally{
-                if (c != null) {
-                    try {
-                        query.close();
-                    } catch (Exception e) {
-                        Log.e("POSTGRESQL", "ERROR: Closing query ", e);
-                    }
-                }
-            }
-        }
-        else {
-            Log.e("FORM", "ERROR: Algun atributo es nulo");
-        }
-    }
-
-    //TODO reemplazarlo por una consulta a la base de datos de las categorias disponibles
-    private void initCategorias() {
-        categorias.put("aros", 1);
-        categorias.put("billeteras", 2);
-        categorias.put("cintos", 3);
-        categorias.put("chalinas", 4);
-        categorias.put("clutchs", 5);
-        categorias.put("collares", 6);
-        categorias.put("monederos", 7);
-        categorias.put("portacelulares", 8);
-        categorias.put("pulseras", 9);
-        categorias.put("relojes", 10);
-        categorias.put("sombreros", 11);
-        categorias.put("anillos", 12);
-    }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
