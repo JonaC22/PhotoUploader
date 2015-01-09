@@ -33,14 +33,12 @@ public class PhotoUploader extends ActionBarActivity {
     private boolean SECURE_UPLOAD = true;
     Cloudinary cloudinary;
     String picturePath = null;
-    Map<String,Integer> categorias = null;
     String cloudinaryURL = null;
     String postgresqlURL = null;
-    DBManager db = new DBManager();
+    Connection c ;
 
     private class ConnectionManager extends AsyncTask<String, Void, String> {
 
-        Connection c;
         String status = " ";
 
         @Override
@@ -55,7 +53,7 @@ public class PhotoUploader extends ActionBarActivity {
             initConnection(postgresqlURL);
 
             Log.i("POSTGRESQL", "Conectado");
-            
+
             return "";
         }
 
@@ -83,20 +81,38 @@ public class PhotoUploader extends ActionBarActivity {
         }
     }
 
-    //TODO ver como separar bien la logica de subir una foto a cloudinary y a la base de datos
-    private class DBManager extends AsyncTask<String, Void, String> {
-
-        Connection c;
+    private class UploadManager extends AsyncTask<String, Void, String> {
+        
+        String status = " ";
 
         @Override
         protected String doInBackground(String... array){
-            //consulta SQL
-            return "";
+            Map upload = null;
+            
+            try {
+                File foto = new File(picturePath);
+                upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
+                Log.i("CLOUDINARY", "La imagen se subió correctamente " + upload.toString());
+            } catch (Exception e) {
+                Log.e("CLOUDINARY", "La aplicacion respondio de una forma inesperada", e);
+                Toast.makeText(getApplicationContext(), "ERROR. See logcat", Toast.LENGTH_LONG).show();
+            }
+
+            EditText tituloEditText = (EditText) findViewById(R.id.tituloEditText);
+            EditText provEditText = (EditText) findViewById(R.id.provEditText);
+            Spinner spinnerCategoria = (Spinner) findViewById(R.id.spinnerCategoria);
+
+            String titulo = tituloEditText.getText().toString();
+            String proveedor = provEditText.getText().toString();
+            int categoria = getCategorias().get(spinnerCategoria.getSelectedItem().toString());
+
+            insertarPostgreSQL(titulo, proveedor, categoria, upload);
+            return " ";
         }
 
         @Override
         protected void onPostExecute(String result) {
-            Toast.makeText(getApplicationContext(), "Base de datos actualizada", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), status, Toast.LENGTH_LONG).show();
         }
 
         public void insertarPostgreSQL(String titulo, String proveedor, int categoria, Map upload) {
@@ -112,8 +128,7 @@ public class PhotoUploader extends ActionBarActivity {
                     query.setString(4, imagen);
 
                     int retorno = query.executeUpdate();
-                    if (retorno > 0)
-                        Log.i("POSTGRESQL", "Insertado correctamente");
+                    if (retorno > 0) Log.i("POSTGRESQL", "Insertado correctamente");
 
                 }catch(SQLException sqle){
                     Log.e("POSTGRESQL", "SQLState: "
@@ -121,10 +136,12 @@ public class PhotoUploader extends ActionBarActivity {
                             + sqle.getErrorCode(), sqle);
                 }catch(Exception e){
                     Log.e("POSTGRESQL", "ERROR ", e);
+                    status = "Error al subir imagen";
                 }finally{
                     if (query != null) {
                         try {
                             query.close();
+                            status = "La foto se subio correctamente";
                         } catch (Exception e) {
                             Log.e("POSTGRESQL", "ERROR: Closing query ", e);
                         }
@@ -181,8 +198,7 @@ public class PhotoUploader extends ActionBarActivity {
         ConnectionManager task = new ConnectionManager();
         task.execute();
         Log.i("Background Thread", "executing task");
-        categorias = db.getCategorias();
-        
+
         //Boton seleccion de imagen 
         Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
         
@@ -206,36 +222,23 @@ public class PhotoUploader extends ActionBarActivity {
         
         buttonUpload.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                //TODO agregar un semaforo o monitor para el testAndSet del SECURE_UPLOAD
+
                 if (SECURE_UPLOAD) {
                     
-                    SECURE_UPLOAD = false;
-                    Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
-                    buttonUpload.setEnabled(false);
-                    Map upload = null;
-                    
-                    try {
-                        File foto = new File(picturePath);
-                        upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
-                        Log.i("CLOUDINARY", "La imagen se subió correctamente " + upload.toString());
-                    } catch (Exception e) {
-                        Log.e("CLOUDINARY", "La aplicacion respondio de una forma inesperada", e);
-                        Toast.makeText(getApplicationContext(), "ERROR. See logcat", Toast.LENGTH_LONG).show();
-                    }
+                    habilitarSubirImagen(false);
 
-                    EditText tituloEditText = (EditText) findViewById(R.id.tituloEditText);
-                    EditText provEditText = (EditText) findViewById(R.id.provEditText);
-                    Spinner spinnerCategoria = (Spinner) findViewById(R.id.spinnerCategoria);
-
-                    String titulo = tituloEditText.getText().toString();
-                    String proveedor = provEditText.getText().toString();
-                    int categoria = categorias.get(spinnerCategoria.getSelectedItem().toString());
-
-                    db.insertarPostgreSQL(titulo, proveedor, categoria, upload);
-                    Toast.makeText(getApplicationContext(), "La foto se subio correctamente", Toast.LENGTH_SHORT).show();
+                    UploadManager uploader = new UploadManager();
+                    uploader.execute();
                 }
             }
         });
+    }
+    
+    private void habilitarSubirImagen(boolean valor){
+
+        SECURE_UPLOAD = valor;
+        Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
+        buttonUpload.setEnabled(valor);
     }
 
     @Override
@@ -255,9 +258,8 @@ public class PhotoUploader extends ActionBarActivity {
             cursor.close();
             ImageView imageView = (ImageView) findViewById(R.id.imgView);
             imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
-            Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
-            buttonUpload.setEnabled(true); 
-            SECURE_UPLOAD = true;
+            
+            habilitarSubirImagen(true);
         }
     }
 }
