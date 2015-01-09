@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
@@ -17,30 +18,141 @@ import android.widget.Spinner;
 import android.widget.Toast;
 import com.cloudinary.Cloudinary;
 import java.io.File;
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class PhotoUploader extends ActionBarActivity {
 
-    private static int RESULT_LOAD_IMAGE = 1;
+    private int RESULT_LOAD_IMAGE = 1;
     private boolean SECURE_UPLOAD = true;
     Cloudinary cloudinary;
     String picturePath = null;
     Map<String,Integer> categorias = null;
     String cloudinaryURL = null;
     String postgresqlURL = null;
+    DBManager db = new DBManager();
 
-    private void initConnections(){
+    private class ConnectionManager extends AsyncTask<String, Void, String> {
 
-        getConnectionStrings();
-        
-        cloudinary = new Cloudinary(cloudinaryURL);
+        Connection c;
+        String status = " ";
 
-        Log.i("CLOUDINARY", "Conectado");
+        @Override
+        protected String doInBackground(String... array){
 
-        DBManager.makeConnection(postgresqlURL);
+            getConnectionStrings();
 
-        Log.i("POSTGRESQL", "Conectado");
+            cloudinary = new Cloudinary(cloudinaryURL);
+
+            Log.i("CLOUDINARY", "Conectado");
+
+            initConnection(postgresqlURL);
+
+            Log.i("POSTGRESQL", "Conectado");
+            
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Log.i("Background Thread", "task executed");
+            Toast.makeText(getApplicationContext(), status, Toast.LENGTH_LONG).show();
+        }
+
+        public void initConnection(String databaseURL) {
+            try {
+                URI dbUri = new URI(databaseURL);
+                String username = dbUri.getUserInfo().split(":")[0];
+                String password = dbUri.getUserInfo().split(":")[1];
+                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() +
+                        dbUri.getPath() + "?user=" + username + "&password=" +
+                        password + "&ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory";
+                Class.forName("org.postgresql.Driver");
+                c = DriverManager.getConnection(dbUrl);
+                status = "Conexiones establecidas";
+            } catch (Exception e){
+                Log.e("POSTGRESQL", "ERROR! " + e.getMessage(), e);
+                status = "Problema en conexiones";
+            }
+        }
+    }
+
+    //TODO ver como separar bien la logica de subir una foto a cloudinary y a la base de datos
+    private class DBManager extends AsyncTask<String, Void, String> {
+
+        Connection c;
+
+        @Override
+        protected String doInBackground(String... array){
+            //consulta SQL
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Toast.makeText(getApplicationContext(), "Base de datos actualizada", Toast.LENGTH_LONG).show();
+        }
+
+        public void insertarPostgreSQL(String titulo, String proveedor, int categoria, Map upload) {
+
+            if (titulo != null && proveedor != null && upload != null) {
+                PreparedStatement query = null;
+                try {
+                    String imagen = upload.get("public_id").toString();
+                    query = c.prepareStatement("INSERT INTO lola.productos (titulo, proveedor, categoria, imagen) VALUES (?,?,?,?)");
+                    query.setString(1, titulo);
+                    query.setString(2, proveedor);
+                    query.setInt(3, categoria);
+                    query.setString(4, imagen);
+
+                    int retorno = query.executeUpdate();
+                    if (retorno > 0)
+                        Log.i("POSTGRESQL", "Insertado correctamente");
+
+                }catch(SQLException sqle){
+                    Log.e("POSTGRESQL", "SQLState: "
+                            + sqle.getSQLState() + " SQLErrorCode: "
+                            + sqle.getErrorCode(), sqle);
+                }catch(Exception e){
+                    Log.e("POSTGRESQL", "ERROR ", e);
+                }finally{
+                    if (query != null) {
+                        try {
+                            query.close();
+                        } catch (Exception e) {
+                            Log.e("POSTGRESQL", "ERROR: Closing query ", e);
+                        }
+                    }
+                }
+            }
+            else {
+                Log.e("FORM", "ERROR: Algun atributo es nulo");
+            }
+        }
+
+        //TODO reemplazarlo por una consulta a la base de datos de las categorias disponibles
+        public Map<String, Integer> getCategorias() {
+            Map<String, Integer> categorias = new HashMap<String, Integer>();
+            categorias.put("aros", 1);
+            categorias.put("billeteras", 2);
+            categorias.put("cintos", 3);
+            categorias.put("chalinas", 4);
+            categorias.put("clutchs", 5);
+            categorias.put("collares", 6);
+            categorias.put("monederos", 7);
+            categorias.put("portacelulares", 8);
+            categorias.put("pulseras", 9);
+            categorias.put("relojes", 10);
+            categorias.put("sombreros", 11);
+            categorias.put("anillos", 12);
+            return categorias;
+        }
     }
     
     private void getConnectionStrings(){
@@ -64,9 +176,12 @@ public class PhotoUploader extends ActionBarActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
-        initConnections();
-        categorias = DBManager.getCategorias();
+        
+        Log.i("Background Thread", "init task");
+        ConnectionManager task = new ConnectionManager();
+        task.execute();
+        Log.i("Background Thread", "executing task");
+        categorias = db.getCategorias();
         
         //Boton seleccion de imagen 
         Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
@@ -116,7 +231,7 @@ public class PhotoUploader extends ActionBarActivity {
                     String proveedor = provEditText.getText().toString();
                     int categoria = categorias.get(spinnerCategoria.getSelectedItem().toString());
 
-                    DBManager.insertarPostgreSQL(titulo, proveedor, categoria, upload);
+                    db.insertarPostgreSQL(titulo, proveedor, categoria, upload);
                     Toast.makeText(getApplicationContext(), "La foto se subio correctamente", Toast.LENGTH_SHORT).show();
                 }
             }
