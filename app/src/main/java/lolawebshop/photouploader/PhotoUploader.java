@@ -35,7 +35,52 @@ public class PhotoUploader extends ActionBarActivity {
     String picturePath = null;
     String cloudinaryURL = null;
     String postgresqlURL = null;
-    Connection c ;
+    Connection c;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+
+        Log.i("Background Thread", "init task");
+        ConnectionManager task = new ConnectionManager();
+        task.execute();
+        Log.i("Background Thread", "executing task");
+
+        //Boton seleccion de imagen 
+        Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
+
+        buttonLoadImage.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View arg0) {
+
+                Intent i = new Intent(
+                        Intent.ACTION_PICK,
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+                startActivityForResult(i, RESULT_LOAD_IMAGE);
+            }
+        });
+
+        //Boton subir imagen
+
+        Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
+        buttonUpload.setEnabled(false);
+
+        buttonUpload.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                if (SECURE_UPLOAD) {
+
+                    habilitarSubirImagen(false);
+
+                    UploadManager uploader = new UploadManager();
+                    uploader.execute();
+                }
+            }
+        });
+    }
 
     private class ConnectionManager extends AsyncTask<String, Void, String> {
 
@@ -189,50 +234,7 @@ public class PhotoUploader extends ActionBarActivity {
         }
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
-        
-        Log.i("Background Thread", "init task");
-        ConnectionManager task = new ConnectionManager();
-        task.execute();
-        Log.i("Background Thread", "executing task");
-
-        //Boton seleccion de imagen 
-        Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
-        
-        buttonLoadImage.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-
-                Intent i = new Intent(
-                        Intent.ACTION_PICK,
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-
-                startActivityForResult(i, RESULT_LOAD_IMAGE);
-            }
-        });
-        
-        //Boton subir imagen
-
-        Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
-        buttonUpload.setEnabled(false);
-        
-        buttonUpload.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-
-                if (SECURE_UPLOAD) {
-                    
-                    habilitarSubirImagen(false);
-
-                    UploadManager uploader = new UploadManager();
-                    uploader.execute();
-                }
-            }
-        });
-    }
+    
     
     private void habilitarSubirImagen(boolean valor){
 
