@@ -17,7 +17,7 @@ android:layout_height="match_parent"
 
 android:gravity="center_vertical|center_horizontal"
 
-android:text="Lengüeta 2"
+android:text="Modificar foto EN CONSTRUCCION"
 
 android:textAppearance="?android:attr/textAppearanceMedium" />
 

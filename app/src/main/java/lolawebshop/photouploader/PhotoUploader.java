@@ -1,5 +1,6 @@
 package lolawebshop.photouploader;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -8,9 +9,11 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -27,7 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PhotoUploader extends ActionBarActivity {
+public class PhotoUploader extends Fragment {
 
     private int RESULT_LOAD_IMAGE = 1;
     private boolean SECURE_UPLOAD = true;
@@ -40,15 +43,21 @@ public class PhotoUploader extends ActionBarActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+    }
+    
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        
+        super.onActivityCreated(savedInstanceState);
 
+        //TODO: reutilizar las conexiones para los otros Tabs
         Log.i("Background Thread", "init task");
         ConnectionManager task = new ConnectionManager();
         task.execute();
         Log.i("Background Thread", "executing task");
-
-        //Boton seleccion de imagen 
-        Button buttonLoadImage = (Button) findViewById(R.id.buttonLoadPicture);
+        
+        //Boton seleccion de imagen
+        Button buttonLoadImage = (Button) getView().findViewById(R.id.buttonLoadPicture);
 
         buttonLoadImage.setOnClickListener(new View.OnClickListener() {
 
@@ -65,7 +74,7 @@ public class PhotoUploader extends ActionBarActivity {
 
         //Boton subir imagen
 
-        Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
+        Button buttonUpload = (Button) getActivity().findViewById(R.id.buttonUpload);
         buttonUpload.setEnabled(false);
 
         buttonUpload.setOnClickListener(new View.OnClickListener() {
@@ -80,8 +89,19 @@ public class PhotoUploader extends ActionBarActivity {
                 }
             }
         });
+        
     }
 
+
+    @Override
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+
+                             Bundle savedInstanceState) {
+
+        return inflater.inflate(R.layout.main, container, false);
+    }
+    
     private class ConnectionManager extends AsyncTask<String, Void, String> {
 
         String status = " ";
@@ -105,7 +125,7 @@ public class PhotoUploader extends ActionBarActivity {
         @Override
         protected void onPostExecute(String result) {
             Log.i("Background Thread", "task executed");
-            Toast.makeText(getApplicationContext(), status, Toast.LENGTH_LONG).show();
+            Toast.makeText(getActivity().getApplicationContext(), status, Toast.LENGTH_LONG).show();
         }
 
         public void initConnection(String databaseURL) {
@@ -140,12 +160,12 @@ public class PhotoUploader extends ActionBarActivity {
                 Log.i("CLOUDINARY", "La imagen se subió correctamente " + upload.toString());
             } catch (Exception e) {
                 Log.e("CLOUDINARY", "La aplicacion respondio de una forma inesperada", e);
-                Toast.makeText(getApplicationContext(), "ERROR. See logcat", Toast.LENGTH_LONG).show();
+                Toast.makeText(getActivity().getApplicationContext(), "ERROR. See logcat", Toast.LENGTH_LONG).show();
             }
 
-            EditText tituloEditText = (EditText) findViewById(R.id.tituloEditText);
-            EditText provEditText = (EditText) findViewById(R.id.provEditText);
-            Spinner spinnerCategoria = (Spinner) findViewById(R.id.spinnerCategoria);
+            EditText tituloEditText = (EditText) getActivity().findViewById(R.id.tituloEditText);
+            EditText provEditText = (EditText) getActivity().findViewById(R.id.provEditText);
+            Spinner spinnerCategoria = (Spinner) getActivity().findViewById(R.id.spinnerCategoria);
 
             String titulo = tituloEditText.getText().toString();
             String proveedor = provEditText.getText().toString();
@@ -157,7 +177,7 @@ public class PhotoUploader extends ActionBarActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            Toast.makeText(getApplicationContext(), status, Toast.LENGTH_LONG).show();
+            Toast.makeText(getActivity().getApplicationContext(), status, Toast.LENGTH_LONG).show();
         }
 
         public void insertarPostgreSQL(String titulo, String proveedor, int categoria, Map upload) {
@@ -219,8 +239,8 @@ public class PhotoUploader extends ActionBarActivity {
     
     private void getConnectionStrings(){
         try {
-            Bundle bundle = getPackageManager()
-                    .getApplicationInfo( getPackageName(), PackageManager.GET_META_DATA)
+            Bundle bundle = getActivity().getPackageManager()
+                    .getApplicationInfo( getActivity().getPackageName(), PackageManager.GET_META_DATA)
                     .metaData;
             cloudinaryURL = bundle.getString("CLOUDINARY_URL");
             postgresqlURL = bundle.getString("POSTGRESQL_URL");
@@ -239,26 +259,28 @@ public class PhotoUploader extends ActionBarActivity {
     private void habilitarSubirImagen(boolean valor){
 
         SECURE_UPLOAD = valor;
-        Button buttonUpload = (Button) findViewById(R.id.buttonUpload);
+        Button buttonUpload = (Button) getActivity().findViewById(R.id.buttonUpload);
         buttonUpload.setEnabled(valor);
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data) {
+        getActivity();
+        if (requestCode == RESULT_LOAD_IMAGE && resultCode == Activity.RESULT_OK && null != data) {
             Uri selectedImage = data.getData();
             String[] filePathColumn = { MediaStore.Images.Media.DATA };
 
-            Cursor cursor = getContentResolver().query(selectedImage,
+            Cursor cursor;
+            cursor = getActivity().getContentResolver().query(selectedImage,
                     filePathColumn, null, null, null);
             cursor.moveToFirst();
 
             int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
             picturePath = cursor.getString(columnIndex);
             cursor.close();
-            ImageView imageView = (ImageView) findViewById(R.id.imgView);
+            ImageView imageView = (ImageView) getActivity().findViewById(R.id.imgView);
             imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
             
             habilitarSubirImagen(true);

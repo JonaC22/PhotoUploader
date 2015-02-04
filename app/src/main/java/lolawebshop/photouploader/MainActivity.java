@@ -16,11 +16,11 @@ public class MainActivity extends FragmentActivity {
         FragmentTabHost tabHost = (FragmentTabHost) findViewById(android.R.id.tabhost);
             tabHost.setup(this,
                     getSupportFragmentManager(), android.R.id.tabcontent);
-            tabHost.addTab(tabHost.newTabSpec("tab1").setIndicator("Lengüeta 1"),
+            tabHost.addTab(tabHost.newTabSpec("tab1").setIndicator("Subir"),
                     PhotoUploader.class, null);
-            tabHost.addTab(tabHost.newTabSpec("tab2").setIndicator("Lengüeta 2"),
+            tabHost.addTab(tabHost.newTabSpec("tab2").setIndicator("Modificar"),
                     Tab2.class, null);
-            tabHost.addTab(tabHost.newTabSpec("tab3").setIndicator("Lengüeta 3"),
+            tabHost.addTab(tabHost.newTabSpec("tab3").setIndicator("Eliminar"),
                     Tab3.class, null);
     }
 }
