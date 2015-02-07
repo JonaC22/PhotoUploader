@@ -9,7 +9,7 @@ import android.view.ViewGroup;
 /**
  * Created by jonathan on 29/01/15.
  */
-public class Tab2 extends Fragment {
+public class Eliminar extends Fragment {
 
     @Override
 
@@ -27,7 +27,7 @@ public class Tab2 extends Fragment {
 
                              Bundle savedInstanceState) {
 
-        return inflater.inflate(R.layout.tab2, container, false);
+        return inflater.inflate(R.layout.tab3, container, false);
 
     }
 

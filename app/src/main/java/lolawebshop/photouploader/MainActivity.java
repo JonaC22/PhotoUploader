@@ -17,10 +17,10 @@ public class MainActivity extends FragmentActivity {
             tabHost.setup(this,
                     getSupportFragmentManager(), android.R.id.tabcontent);
             tabHost.addTab(tabHost.newTabSpec("tab1").setIndicator("Subir"),
-                    PhotoUploader.class, null);
+                    Subir.class, null);
             tabHost.addTab(tabHost.newTabSpec("tab2").setIndicator("Modificar"),
-                    Tab2.class, null);
+                    Modificar.class, null);
             tabHost.addTab(tabHost.newTabSpec("tab3").setIndicator("Eliminar"),
-                    Tab3.class, null);
+                    Eliminar.class, null);
     }
 }

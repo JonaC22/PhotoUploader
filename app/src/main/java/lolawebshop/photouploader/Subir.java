@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PhotoUploader extends Fragment {
+public class Subir extends Fragment {
 
     private int RESULT_LOAD_IMAGE = 1;
     private boolean SECURE_UPLOAD = true;
