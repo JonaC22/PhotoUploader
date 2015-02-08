@@ -19,11 +19,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
-import com.cloudinary.Cloudinary;
 import java.io.File;
-import java.net.URI;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -34,11 +30,10 @@ public class Subir extends Fragment {
 
     private int RESULT_LOAD_IMAGE = 1;
     private boolean SECURE_UPLOAD = true;
-    Cloudinary cloudinary;
     String picturePath = null;
     String cloudinaryURL = null;
     String postgresqlURL = null;
-    Connection c;
+    ConnectionManager task;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -52,7 +47,8 @@ public class Subir extends Fragment {
 
         //TODO: reutilizar las conexiones para los otros Tabs
         Log.i("Background Thread", "init task");
-        ConnectionManager task = new ConnectionManager();
+        task = new ConnectionManager();
+        task.setActivity(getActivity());
         task.execute();
         Log.i("Background Thread", "executing task");
         
@@ -92,7 +88,6 @@ public class Subir extends Fragment {
         
     }
 
-
     @Override
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -100,50 +95,6 @@ public class Subir extends Fragment {
                              Bundle savedInstanceState) {
 
         return inflater.inflate(R.layout.main, container, false);
-    }
-    
-    private class ConnectionManager extends AsyncTask<String, Void, String> {
-
-        String status = " ";
-
-        @Override
-        protected String doInBackground(String... array){
-
-            getConnectionStrings();
-
-            cloudinary = new Cloudinary(cloudinaryURL);
-
-            Log.i("CLOUDINARY", "Conectado");
-
-            initConnection(postgresqlURL);
-
-            Log.i("POSTGRESQL", "Conectado");
-
-            return "";
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            Log.i("Background Thread", "task executed");
-            Toast.makeText(getActivity().getApplicationContext(), status, Toast.LENGTH_LONG).show();
-        }
-
-        public void initConnection(String databaseURL) {
-            try {
-                URI dbUri = new URI(databaseURL);
-                String username = dbUri.getUserInfo().split(":")[0];
-                String password = dbUri.getUserInfo().split(":")[1];
-                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() +
-                        dbUri.getPath() + "?user=" + username + "&password=" +
-                        password + "&ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory";
-                Class.forName("org.postgresql.Driver");
-                c = DriverManager.getConnection(dbUrl);
-                status = "Conexiones establecidas";
-            } catch (Exception e){
-                Log.e("POSTGRESQL", "ERROR! " + e.getMessage(), e);
-                status = "Problema en conexiones";
-            }
-        }
     }
 
     private class UploadManager extends AsyncTask<String, Void, String> {
@@ -156,7 +107,7 @@ public class Subir extends Fragment {
             
             try {
                 File foto = new File(picturePath);
-                upload = cloudinary.uploader().upload(foto, Collections.emptyMap());
+                upload = task.cloudinary.uploader().upload(foto, Collections.emptyMap());
                 Log.i("CLOUDINARY", "La imagen se subió correctamente " + upload.toString());
             } catch (Exception e) {
                 Log.e("CLOUDINARY", "La aplicacion respondio de una forma inesperada", e);
@@ -186,7 +137,7 @@ public class Subir extends Fragment {
                 PreparedStatement query = null;
                 try {
                     String imagen = upload.get("public_id").toString();
-                    query = c.prepareStatement("INSERT INTO lola.productos (titulo, proveedor, categoria, imagen) VALUES (?,?,?,?)");
+                    query = task.c.prepareStatement("INSERT INTO lola.productos (titulo, proveedor, categoria, imagen) VALUES (?,?,?,?)");
                     query.setString(1, titulo);
                     query.setString(2, proveedor);
                     query.setInt(3, categoria);
@@ -236,25 +187,6 @@ public class Subir extends Fragment {
             return categorias;
         }
     }
-    
-    private void getConnectionStrings(){
-        try {
-            Bundle bundle = getActivity().getPackageManager()
-                    .getApplicationInfo( getActivity().getPackageName(), PackageManager.GET_META_DATA)
-                    .metaData;
-            cloudinaryURL = bundle.getString("CLOUDINARY_URL");
-            postgresqlURL = bundle.getString("POSTGRESQL_URL");
-
-        } catch (Exception e) {
-            Log.e("PackageManager", "ERROR! " + e.getMessage(), e);
-        }
-        
-        if (cloudinaryURL == null || postgresqlURL == null) {
-            throw new RuntimeException("Couldn't load meta-data from manifest");
-        }
-    }
-
-    
     
     private void habilitarSubirImagen(boolean valor){
 
