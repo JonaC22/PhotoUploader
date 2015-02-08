@@ -7,18 +7,9 @@
 
     android:orientation="vertical" >
 
-<TextView
-
-android:id="@+id/text"
-
-android:layout_width="match_parent"
-
-android:layout_height="match_parent"
-
-android:gravity="center_vertical|center_horizontal"
-
-android:text="Modificar foto EN CONSTRUCCION"
-
-android:textAppearance="?android:attr/textAppearanceMedium" />
-
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/listView"
+        android:layout_gravity="right" />
 </LinearLayout>
