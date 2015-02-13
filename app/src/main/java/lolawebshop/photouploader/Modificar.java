@@ -2,7 +2,6 @@ package lolawebshop.photouploader;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,13 +26,7 @@ public class Modificar extends Fragment {
 
         super.onActivityCreated(savedInstanceState);
 
-        //TODO: reutilizar las conexiones para los otros Tabs
-        Log.i("Background Thread", "init task");
-
-        task = new ConnectionManager();
-        task.setActivity(getActivity());
-        task.execute();
-        Log.i("Background Thread", "executing task");
+        task = ConnectionManager.getInstance();
 
     }
 

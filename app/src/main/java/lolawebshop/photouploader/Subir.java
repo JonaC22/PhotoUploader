@@ -2,7 +2,6 @@ package lolawebshop.photouploader;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -31,8 +30,6 @@ public class Subir extends Fragment {
     private int RESULT_LOAD_IMAGE = 1;
     private boolean SECURE_UPLOAD = true;
     String picturePath = null;
-    String cloudinaryURL = null;
-    String postgresqlURL = null;
     ConnectionManager task;
 
     @Override
@@ -45,12 +42,7 @@ public class Subir extends Fragment {
         
         super.onActivityCreated(savedInstanceState);
 
-        //TODO: reutilizar las conexiones para los otros Tabs
-        Log.i("Background Thread", "init task");
-        task = new ConnectionManager();
-        task.setActivity(getActivity());
-        task.execute();
-        Log.i("Background Thread", "executing task");
+        task = ConnectionManager.getInstance();
         
         //Boton seleccion de imagen
         Button buttonLoadImage = (Button) getView().findViewById(R.id.buttonLoadPicture);
