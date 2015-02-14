@@ -89,6 +89,7 @@ public class Subir extends Fragment {
         return inflater.inflate(R.layout.main, container, false);
     }
 
+    //TODO separar esto de la clase Subir y reutilizarlo
     private class UploadManager extends AsyncTask<String, Void, String> {
         
         String status = " ";

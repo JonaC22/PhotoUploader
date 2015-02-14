@@ -19,8 +19,6 @@ public class Eliminar extends Fragment {
 
     }
 
-
-
     @Override
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

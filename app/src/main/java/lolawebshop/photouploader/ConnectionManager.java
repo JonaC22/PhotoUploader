@@ -6,9 +6,7 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.widget.Toast;
-
 import com.cloudinary.Cloudinary;
-
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
